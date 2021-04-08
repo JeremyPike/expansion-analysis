@@ -46,7 +46,7 @@ import loci.plugins.BF
 #@Double(label="Linking distance", value=0) linkingDist
 #@Integer(label="Box crop width (microns)", value=10) cropWidth
 #@Integer(label="Number of classes", value=5) numClasses
-#@Boolean(label="Do you want tp save cropped site images", value=false) saveCrops
+#@Boolean(label="Do you want to save cropped site images", value=false) saveCrops
 
 
 // close all open window
@@ -131,10 +131,13 @@ def processFile(file) {
 	// Display the detected spots over the image stack
 	displaySpots(spotsC1, spotsC2, imp)
 	
+	
 	// Ask the user if they want to do class assigments
 	ok = askForBoolean("Do you want to do class assignments for this dataset?")
-	if(ok) {
 
+
+	if(ok) {
+		
 		// For convenience
 		IJ.run("Brightness/Contrast...")
 		
@@ -149,8 +152,9 @@ def processFile(file) {
 
 		// Iterate through sites (connected components of the graph)
 		count = 0
-		for (cc in ccs) {
 	
+		for (cc in ccs) {
+			if (count < 3) {
 			// Find centre of mass for the site (siteCoords)
 			siteCoords = new double[3]
 			ccNumSpots = cc.getValue().size()
@@ -167,7 +171,7 @@ def processFile(file) {
 			yMin = (int) Math.floor((siteCoords[1] - cropWidth / 2) / xyCal)
 			zMin = (int) Math.floor((siteCoords[2] - cropWidth / 2) / zCal) + 1
 			zMax = (int) Math.floor((siteCoords[2] + cropWidth / 2) / zCal) + 1
-			xyCropWidth = (int) Math.floor(cropWidth / xyCal
+			xyCropWidth = (int) Math.floor(cropWidth / xyCal)
 			imp.setRoi(xMin, yMin, xyCropWidth, xyCropWidth)
 			impCrop = new Duplicator().run(imp, 1, 2, zMin, zMax, 1, 1)
 
@@ -176,9 +180,9 @@ def processFile(file) {
 			// Add spot representing the site
 			displaySpot = new Spot(cropWidth / 2, cropWidth / 2, cropWidth / 2, 2, 0)
 			siteSpot = new SpotCollection()
-			siteSpot.add(displaySpot, 0);
+			siteSpot.add(displaySpot, 0)
 			displaySpots(siteSpot, impCrop)
-
+	
 			// Enhance constrast in relvent channels, resize windows etc
 			// For convenience
 			impCrop.setPosition(1, (int) Math.ceil(impCrop.nSlices / 2), 1)
@@ -188,7 +192,7 @@ def processFile(file) {
 			IJ.run(impCrop, "Enhance Contrast", "saturated=0.35")
 			wind = WindowManager.getCurrentWindow()
 			wind.setLocationAndSize((int) wind.LEFT_ALIGNMENT, (int) wind.TOP_ALIGNMENT, wind.width * 5, wind.height * 5)
-
+			
 			// Ask user to define a class for the current site
 			cat = askForClass(numClasses)
 			
@@ -203,12 +207,13 @@ def processFile(file) {
 			// If requested save the cropped site stack
 			if (saveCrops) {
 				outCropPath = file.getAbsolutePath().substring(0, file.getAbsolutePath().lastIndexOf("."))  + "_class" + cat + "_siteID" + count + ".tif"
-				IJ.saveAs(impCrop, "Tiff", outCropPath);
+				IJ.saveAs(impCrop, "Tiff", outCropPath)
 			}
 	
 			// Close cropped image		
 			impCrop.close()
 			count++
+	}
 		}
 	
 		// Save the site class table
@@ -221,8 +226,9 @@ def processFile(file) {
 		output.addValue("Num spots C1", spotsC1.getNSpots(true))
 		output.addValue("Num spots C2", spotsC2.getNSpots(true))
 		output.addValue("Num sites", ccs.size())
+		
 	}	
-
+	
 	// Close image
 	imp.close()
 	
@@ -417,10 +423,11 @@ def askForClass(numClasses) {
  *            Boolean value from user
  */
 def askForBoolean(message) {
-	gd = new GenericDialog("Quesion")
+	new WaitForUserDialog("ok?").show()
+	gd = new GenericDialog("Question")
 	gd.addCheckbox(message, true);
 	gd.showDialog()
-	val = gd.getCheckbox()
+	val = gd.getNextBoolean()
 	return val
 }
 
